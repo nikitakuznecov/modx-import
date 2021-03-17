@@ -20,7 +20,7 @@
 return array(
 
    main_general_categoryID => '1',
-   main_step => '100',
+   main_step => '1000',
    main_file_name => 'test.csv',
    main_delimiter => '|',
    main_unique_field_category => 'article',

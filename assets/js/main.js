@@ -108,8 +108,10 @@ var app = new Vue({
 	  products:[],
 		categories:[],
     value: 0,
-    max:100,
+    max:0,
     error_messages:[],
+    caption:'',
+    dataType:'categoriesUpdate'
 	},
 	filters: {},
 	methods:{ 
@@ -125,7 +127,30 @@ var app = new Vue({
           this.categories = response.data.categories;
           this.readyImport = true;
           this.process = false;
-          console.log(response.data);
+        }
+      }).catch(error => {
+        this.process = false;
+        this.error_messages.push({description: 'В результате выполнения программы произошел сбой', code: error});
+      });
+    },
+    runImport: function(){
+
+      this.process = true;
+
+      axios.get(this.dataType) 
+      .then(response => {
+
+        this.value = response.data.uploaded;
+        this.max = response.data.amount;
+        this.caption = response.data.caption;
+        this.dataType = response.data.dataType;
+
+        if(response.data.dataType !== 'done'){
+            this.runImport();
+        }else{
+            this.process = false;
+            this.products = [];
+            this.categories = [];
         }
       }).catch(error => {
         this.process = false;

@@ -1,3 +1,4 @@
+<? session_start(); ?>
 <?php require_once __DIR__ . '/core/bootstrap.php';?>
 <!DOCTYPE html>
 <html>
@@ -28,7 +29,7 @@
       <div class="btn-group">
         <div v-if="isReadyImport">
           <b-overlay :show="inProcess" rounded opacity="0.6" spinner-small spinner-variant="primary" class="d-inline-block">
-            <b-button ref="button" :disabled="inProcess" variant="success">
+            <b-button ref="button" :disabled="inProcess" variant="success" @click="runImport">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
               <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
               <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
@@ -54,8 +55,8 @@
   <div v-if="isReadyImport">
       <hr>
       <b-progress :max = "max" height="2rem" variant="success" striped show-progress :animated="true">
-        <b-progress-bar :value="value">
-          <span>Процесс: <strong>{{ value }} / {{ max }}</strong></span>
+        <b-progress-bar :value="value" :caption="caption">
+          <span>{{caption}} <strong>{{ value }} / {{ max }}</strong></span>
         </b-progress-bar>
       </b-progress>
       <hr>
@@ -194,4 +195,4 @@
 
 </body>
 </html>
-
+<? session_write_close(); ?>
