@@ -1,0 +1,30 @@
+{
+    "name": "cosmetica-profi/import",
+    "description": "The package is intended for unloading goods into the cosmetica-profi.ru store.",
+    "license": "Free Software",
+    "authors": [
+        {
+            "name": "Nikita Kuznecov",
+            "email": "nk_pvc@mail.ru"
+        }
+    ],
+    "require": {
+       "goodby/csv": "*"
+    },
+    "autoload": {
+        "psr-4": {
+          "Import\\Assets\\":"assets",
+          "Import\\Assets\\Classes\\":"assets/classes",
+          "Import\\Assets\\Controllers\\":"assets/controllers",
+          "Import\\Core\\":"core",
+          "Import\\Base\\":"core/classes",
+          "Import\\Model\\":"core/model",
+          "Import\\Helpers\\":"core/helpers",
+          "Import\\Model\\Config\\":"core/model/config",
+          "Import\\Model\\Request\\":"core/model/request",
+          "Import\\Model\\Router\\":"core/model/router", 
+          "Import\\Model\\Parser\\":"core/model/parser", 
+          "Import\\Helpers\\":"core/helpers"
+        }
+    }
+}
