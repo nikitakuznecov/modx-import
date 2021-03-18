@@ -26,21 +26,21 @@ class HomeController extends CmsController
       $_SESSION['allCat']['items'] = $this->parser->getCategoriesArray();
       $_SESSION['allProd']['items'] = $this->parser->getProductsArray();
 
-      $_SESSION['newCat']['items'] =   array_filter($_SESSION['allCat']['items'], function($val) {return ($val == true);}, ARRAY_FILTER_USE_KEY);
-      $_SESSION['updCat']['items'] =   array_filter($_SESSION['allCat']['items'], function($val) {return ($val == false);}, ARRAY_FILTER_USE_KEY);
-      $_SESSION['newProd']['items'] =  array_filter($_SESSION['allProd']['items'], function($val) {return ($val == true);}, ARRAY_FILTER_USE_KEY);
-      $_SESSION['updProd']['items'] =  array_filter($_SESSION['allProd']['items'], function($val) {return ($val == false);}, ARRAY_FILTER_USE_KEY);
+      $_SESSION['newCat']['items'] =   $this->filter_array($_SESSION['allCat']['items'],'state',false);
+      $_SESSION['updCat']['items'] =   $this->filter_array($_SESSION['allCat']['items'],'state',true);
+      $_SESSION['newProd']['items'] =  $this->filter_array($_SESSION['allProd']['items'],'state',false); 
+      $_SESSION['updProd']['items'] =  $this->filter_array($_SESSION['allProd']['items'],'state',true); 
 
       $_SESSION['newProd']['amount'] = sizeof($_SESSION['newProd']['items']);
       $_SESSION['updProd']['amount'] = sizeof($_SESSION['updProd']['items']);
       $_SESSION['newCat']['amount'] =  sizeof($_SESSION['newCat']['items']);
       $_SESSION['updCat']['amount'] =  sizeof($_SESSION['updCat']['items']);
 
-      $_SESSION['newProd']['start'] = $_SESSION['updProd']['start'] = $_SESSION['newCat']['start'] = $_SESSION['updCat']['start'] = 0;
+      $_SESSION['newProd']['start'] = $_SESSION['updProd']['start']= $_SESSION['newProd']['start'] = $_SESSION['newCat']['start'] = $_SESSION['updCat']['start'] = 0;
       $_SESSION['newProd']['limit'] = $_SESSION['updProd']['limit'] = $config['ImportConfig']['main_step'];
       $_SESSION['newCat']['limit'] = $_SESSION['updCat']['limit'] = $config['ImportConfig']['main_step'];
 
-      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"updCat" => $_SESSION['updCat']['items']));
+      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" =>$_SESSION['newCat']['items'])); 
 
     }
     
@@ -61,7 +61,28 @@ class HomeController extends CmsController
 
           for ($i=$start; $i < $limit; $i++) { 
             
+            //Пытаемся найти категорию, если получается идем дальше
+            if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['updCat']['items'][$i]['pagetitle']))->get('id')){
 
+              //Массив параметров для импорта по умолчанию 
+              $arrayDef = array('id'=>$id,'published' => 1,'context_key' => 'web');
+
+              //Формируем одну строку со всеми указанными параметрами в массив
+              $importArray = $this->importArray( $_SESSION['updCat']['items'], $i ,$arrayDef);
+
+              //Запускаем процессор и передаем ему массив параметров 
+              $response = $modx->runProcessor('resource/update', $importArray);
+
+              //Если что-то не так нам процессор вернет ошибку и мы отдаем на обработку js
+              if ($response->response['success'] == false) {
+
+                foreach ($response->errors as $key => $value) {
+
+                    $modx->error->reset();
+
+                }
+              }
+            }
           }
           $_SESSION['updCat']['start'] = $i;
 
@@ -94,23 +115,44 @@ class HomeController extends CmsController
           $start = $_SESSION['newCat']['start'];
           $limit = $_SESSION['newCat']['start'] + $_SESSION['newCat']['limit'];
 
-          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}  
+          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}   // тут ошибка в лимите - он идет не до конца цикла
 
           for ($i=$start; $i < $limit; $i++) { 
-            
+         
+            //Проверим есть ли значение с таким ключем в исходном массиве, если есть то идем дальше
+            if(!empty($_SESSION['newCat']['items'][$i]['pagetitle'])){
+              //Массив параметров для импорта по умолчанию 
+              $arrayDef = array('link_attributes'=> $_SESSION['newCat']['items'][$i]['pagetitle'],'parent' => $idParrent,'template' => $category_template,'isfolder' => 1,'published' => 1,'class_key' => 'msCategory','context_key' => 'web');
+
+              //Формируем одну строку со всеми указанными параметрами в массив
+              $importArray = $this->importArray( $_SESSION['newCat']['items'], $i ,$arrayDef);
+
+              //Запускаем процессор и передаем ему массив параметров 
+              $response = $modx->runProcessor('resource/create', $importArray);
+
+              //Если что-то не так нам процессор вернет ошибку и мы отдаем на обработку js
+              if ($response->response['success'] == false) {
+
+                foreach ($response->errors as $key => $value) {
+
+                    $modx->error->reset();
+
+                }
+              }
+            }
 
           }
           $_SESSION['newCat']['start'] = $i;
 
-          if($status == 'next'){
+           if($status == 'next'){
 
-            Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'categoriesCreate'));
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'categoriesCreate'));
 
-          }else{
+              }else{
 
-            Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'productsUpdate'));
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'productsUpdate'));
 
-         }
+            }
       }else{
 
           Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Добавление категорий','dataType' => 'productsUpdate'),true);
@@ -197,7 +239,46 @@ class HomeController extends CmsController
 
     }
     
+    function importArray( $array, $iterator = 0, $mixed)
+    {
+    
+            $result = array();
+            
+            $k = array_keys($array[$iterator]);
+            
+            $v = array_values($array[$iterator]);
+            
+            foreach ($k as $key => $value) {
+    
+               if($value !== 'state'){
 
+                   $result[$value] = $v[$key];
+
+               }
+    
+            }
+            
+            return  array_merge ($result, $mixed);
+    
+    }
+    public function filter_array($array,$the_rule,$condition){
+         
+      $result = array();
+
+      if($array && $the_rule && $condition !== null){
+        
+        foreach($array as $key => $value){
+          
+          if($array[$key][$the_rule] === $condition){
+
+            $result[$key] = $array[$key];
+
+          }
+        }
+      }
+
+      return $result;
+    }
 
 }
 ?>

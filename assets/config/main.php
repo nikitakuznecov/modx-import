@@ -23,7 +23,7 @@ return array(
    main_step => '1000',
    main_file_name => 'test.csv',
    main_delimiter => '|',
-   main_unique_field_category => 'article',
+   main_unique_field_category => 'pagetitle',
    main_unique_field_product => 'code',
    main_field_names_product => array(
       'article',
@@ -55,7 +55,7 @@ return array(
       'cover material'
    ),
    main_field_names_category => array(
-      'article',
+      'none',
       'none',
       'none',
       'none',

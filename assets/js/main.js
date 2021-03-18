@@ -71,12 +71,12 @@ Vue.component('paginated-list',{
     }
   },
   template: `
-  <div>
+  <div>   
     <b-list-group>
       <div v-for="(p, index) in paginatedData" :key="index">
         <b-list-group-item variant="success">
         <div class="d-flex align-items-center justify-content-between">
-               <span class="title">Название - {{ p.pagetitle }}   Артикул - {{ p.article }}</span> 
+               <span class="title">Название - {{ p.pagetitle }}   <span v-if="p.article"> Артикул - {{ p.article }} </span></span> 
                <span class="state badge warning" v-if="p.state == true"> Обновление </span>
                <span class="state badge success" v-else> Новый </span>
         </div>
@@ -119,6 +119,7 @@ var app = new Vue({
       this.process = true;
       axios.get("getImport") 
       .then(response => {
+        console.log(response.data);
         if(response.data.error){
           this.process = false;
           this.error_messages.push({description: response.data.response, code: 'Ошибка'});
@@ -137,25 +138,42 @@ var app = new Vue({
 
       this.process = true;
 
-      axios.get(this.dataType) 
+      axios.get(this.dataType) //Направляем запрос на сервер (по умолчанию обновление категорий)
       .then(response => {
 
-        this.value = response.data.uploaded;
-        this.max = response.data.amount;
-        this.caption = response.data.caption;
-        this.dataType = response.data.dataType;
+        //Проверим есть ли ответ от сервера
+        if(response.data){
 
-        if(response.data.dataType !== 'done'){
-            this.runImport();
-        }else{
-            this.process = false;
-            this.products = [];
-            this.categories = [];
+          this.value = response.data.uploaded;
+          this.max = response.data.amount;
+          this.caption = response.data.caption;
+          this.dataType = response.data.dataType; // Тут получаем следующее действие а именно название роутера
+  
+          if(response.data.dataType !== 'done'){//Если не конец выгрузки то продолжаем
+
+              this.runImport();  //Запускаемся еще раз с новым значением роутера 
+
+          }else{//Конец выгрузки завершаем процесс
+
+              this.process = false;
+              this.products = [];
+              this.categories = [];
+          }
+
+        }else{ //Если ответа нет то завершаем процесс и возвращаем ошибку
+
+          this.process = false;
+          this.error_messages.push({description: 'Сервер отдал непригодные данные для выгрузки..', code: 'Ошибка'});
+
         }
-      }).catch(error => {
+
+      }).catch(error => {//В случае если вдруг что-то пошло не так, завершаем процесс и отдаем ошибку
+
         this.process = false;
         this.error_messages.push({description: 'В результате выполнения программы произошел сбой', code: error});
+
       });
+
     }
 	},
 	computed: {
