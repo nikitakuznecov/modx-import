@@ -187,7 +187,7 @@ class HomeController extends CmsController
               if($id = $modx->getObject('msProduct',array('link_attributes'=> $_SESSION['updProd']['items'][$i][$main_unique_field_product]))->get('id')){
 
                 //Массив параметров для импорта по умолчанию 
-                $arrayDef = array('id'=>$id,'alias'=>$_SESSION['updProd']['items'][$i]['pagetitle'].'-'.$_SESSION['updProd']['items'][$i][$main_unique_field_product],'published' => 1,'context_key' => 'web','class_key' => 'msProduct');
+                $arrayDef = array('id'=>$id,'alias'=>$_SESSION['updProd']['items'][$i]['pagetitle'].'-'.$_SESSION['updProd']['items'][$i][$main_unique_field_product],'published' => 1,'context_key' => 'web','class_key' => 'msProduct','tvs'=>true);
 
                 //Формируем одну строку со всеми указанными параметрами в массив
                 $importArray = $this->importArray( $_SESSION['updProd']['items'], $i ,$arrayDef);
