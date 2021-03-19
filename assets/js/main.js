@@ -148,7 +148,7 @@ var app = new Vue({
           this.max = response.data.amount;
           this.caption = response.data.caption;
           this.dataType = response.data.dataType; // Тут получаем следующее действие а именно название роутера
-  
+          
           if(response.data.dataType !== 'done'){//Если не конец выгрузки то продолжаем
 
               this.runImport();  //Запускаемся еще раз с новым значением роутера 
@@ -159,6 +159,7 @@ var app = new Vue({
               this.products = [];
               this.categories = [];
           }
+          console.log(response.data);
 
         }else{ //Если ответа нет то завершаем процесс и возвращаем ошибку
 

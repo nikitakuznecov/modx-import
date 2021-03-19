@@ -36,11 +36,13 @@ class HomeController extends CmsController
       $_SESSION['newCat']['amount'] =  sizeof($_SESSION['newCat']['items']);
       $_SESSION['updCat']['amount'] =  sizeof($_SESSION['updCat']['items']);
 
+      $_SESSION['allPositions']['amount'] = $_SESSION['newProd']['amount']+$_SESSION['updProd']['amount']+$_SESSION['newCat']['amount']+$_SESSION['updCat']['amount'];
+
       $_SESSION['newProd']['start'] = $_SESSION['updProd']['start']= $_SESSION['newProd']['start'] = $_SESSION['newCat']['start'] = $_SESSION['updCat']['start'] = 0;
       $_SESSION['newProd']['limit'] = $_SESSION['updProd']['limit'] = $config['ImportConfig']['main_step'];
       $_SESSION['newCat']['limit'] = $_SESSION['updCat']['limit'] = $config['ImportConfig']['main_step'];
 
-      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" =>$_SESSION['newCat']['items'])); 
+      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" => $_SESSION['updProd']['items'])); 
 
     }
     
@@ -50,6 +52,7 @@ class HomeController extends CmsController
       $config = $this->di->get("config");
       $category_template = $config['ImportConfig']['main_cat_template'];
       $idParrent = $config['ImportConfig']['main_general_categoryID'];
+      $main_unique_field_category = $config['ImportConfig']['main_unique_field_category'];
 
       if (!empty($_SESSION['updCat']['items'])) {
 
@@ -62,10 +65,10 @@ class HomeController extends CmsController
           for ($i=$start; $i < $limit; $i++) { 
             
             //Пытаемся найти категорию, если получается идем дальше
-            if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['updCat']['items'][$i]['pagetitle']))->get('id')){
+            if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['updCat']['items'][$i][$main_unique_field_category ]))->get('id')){
 
               //Массив параметров для импорта по умолчанию 
-              $arrayDef = array('id'=>$id,'published' => 1,'context_key' => 'web');
+              $arrayDef = array('id'=>$id,'published' => 1,'context_key' => 'web','class_key' => 'msCategory');
 
               //Формируем одну строку со всеми указанными параметрами в массив
               $importArray = $this->importArray( $_SESSION['updCat']['items'], $i ,$arrayDef);
@@ -108,6 +111,7 @@ class HomeController extends CmsController
       $config = $this->di->get("config");
       $category_template = $config['ImportConfig']['main_cat_template'];
       $idParrent = $config['ImportConfig']['main_general_categoryID'];
+      $main_unique_field_category = $config['ImportConfig']['main_unique_field_category'];
 
       if (!empty($_SESSION['newCat']['items'])) {
 
@@ -115,14 +119,14 @@ class HomeController extends CmsController
           $start = $_SESSION['newCat']['start'];
           $limit = $_SESSION['newCat']['start'] + $_SESSION['newCat']['limit'];
 
-          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}   // тут ошибка в лимите - он идет не до конца цикла
+          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}   
 
-          for ($i=$start; $i < $limit; $i++) { 
+          for ($i=$start; $i <= $limit; $i++) { 
          
             //Проверим есть ли значение с таким ключем в исходном массиве, если есть то идем дальше
-            if(!empty($_SESSION['newCat']['items'][$i]['pagetitle'])){
+            if(!empty($_SESSION['newCat']['items'][$i][$main_unique_field_category])){
               //Массив параметров для импорта по умолчанию 
-              $arrayDef = array('link_attributes'=> $_SESSION['newCat']['items'][$i]['pagetitle'],'parent' => $idParrent,'template' => $category_template,'isfolder' => 1,'published' => 1,'class_key' => 'msCategory','context_key' => 'web');
+              $arrayDef = array('link_attributes'=> $_SESSION['newCat']['items'][$i][$main_unique_field_category],'parent' => $idParrent,'template' => $category_template,'isfolder' => 1,'published' => 1,'class_key' => 'msCategory','context_key' => 'web');
 
               //Формируем одну строку со всеми указанными параметрами в массив
               $importArray = $this->importArray( $_SESSION['newCat']['items'], $i ,$arrayDef);
@@ -163,19 +167,46 @@ class HomeController extends CmsController
     {
       $modx = $this->di->get("modx");
       $config = $this->di->get("config");
-      $category_template = $config['ImportConfig']['main_cat_template'];
+      $main_prod_template = $config['ImportConfig']['main_prod_template'];
       $idParrent = $config['ImportConfig']['main_general_categoryID'];
-
+      $main_unique_field_product = $config['ImportConfig']['main_unique_field_product'];
+   
       if (!empty($_SESSION['updProd']['items'])) {
 
           $amount = $_SESSION['updProd']['amount'];
           $start = $_SESSION['updProd']['start'];
           $limit = $_SESSION['updProd']['start'] + $_SESSION['updProd']['limit'];
-
+         
           if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}  
 
           for ($i=$start; $i < $limit; $i++) { 
-            
+              
+            if($_SESSION['updProd']['items'][$i][$main_unique_field_product]){
+
+              //Пытаемся найти товар, если получается идем дальше
+              if($id = $modx->getObject('msProduct',array('link_attributes'=> $_SESSION['updProd']['items'][$i][$main_unique_field_product]))->get('id')){
+
+                //Массив параметров для импорта по умолчанию 
+                $arrayDef = array('id'=>$id,'alias'=>$_SESSION['updProd']['items'][$i]['pagetitle'].'-'.$_SESSION['updProd']['items'][$i][$main_unique_field_product],'published' => 1,'context_key' => 'web','class_key' => 'msProduct');
+
+                //Формируем одну строку со всеми указанными параметрами в массив
+                $importArray = $this->importArray( $_SESSION['updProd']['items'], $i ,$arrayDef);
+      
+                //Запускаем процессор и передаем ему массив параметров 
+                $response = $modx->runProcessor('resource/update', $importArray);
+
+                //Если что-то не так нам процессор вернет ошибку и мы отдаем на обработку js
+                if ($response->response['success'] == false) {
+
+                  foreach ($response->errors as $key => $value) {
+
+                      $modx->error->reset();
+
+                  }
+                }
+              }
+
+            }
 
           }
           $_SESSION['updProd']['start'] = $i;
@@ -199,8 +230,10 @@ class HomeController extends CmsController
     {
       $modx = $this->di->get("modx");
       $config = $this->di->get("config");
-      $category_template = $config['ImportConfig']['main_cat_template'];
+      $main_prod_template = $config['ImportConfig']['main_prod_template'];
       $idParrent = $config['ImportConfig']['main_general_categoryID'];
+      $main_unique_field_product = $config['ImportConfig']['main_unique_field_product'];
+      $main_unique_field_category = $config['ImportConfig']['main_unique_field_category'];
 
       if (!empty($_SESSION['newProd']['items'])) {
 
@@ -210,9 +243,34 @@ class HomeController extends CmsController
 
           if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}  
 
-          for ($i=$start; $i < $limit; $i++) { 
+          for ($i=$start; $i <= $limit; $i++) { 
             
+            if($_SESSION['newProd']['items'][$i]['tv16']){
 
+              //Пытаемся найти категорию товара, если получается идем дальше
+              if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['newProd']['items'][$i]['tv16']))->get('id')){
+
+                //Массив параметров для импорта по умолчанию 
+                $arrayDef = array('parent' => $id,'alias'=>$_SESSION['newProd']['items'][$i]['pagetitle'].'-'.$_SESSION['newProd']['items'][$i][$main_unique_field_product],'link_attributes'=>$_SESSION['newProd']['items'][$i][$main_unique_field_product],'template' => $main_prod_template,'isfolder' => 0,'published' => 1,'class_key' => 'msProduct','context_key' => 'web');
+
+                //Формируем одну строку со всеми указанными параметрами в массив
+                $importArray = $this->importArray( $_SESSION['newProd']['items'], $i ,$arrayDef);
+
+                //Запускаем процессор и передаем ему массив параметров 
+                $response = $modx->runProcessor('resource/create', $importArray);
+
+                //Если что-то не так нам процессор вернет ошибку и мы отдаем на обработку js
+                if ($response->response['success'] == false) {
+
+                  foreach ($response->errors as $key => $value) {
+
+                      $modx->error->reset();
+
+                  }
+                }
+              }
+
+            }
           }
           $_SESSION['newProd']['start'] = $i;
 
@@ -233,9 +291,10 @@ class HomeController extends CmsController
     }
     public function finished()
     {
-        Messages::messager(array('amount' => $_SESSION['newProd']['amount'],'uploaded' => $_SESSION['newProd']['amount'],'status' => 'stop','caption' => 'Выгрузка окончена','dataType' => 'done'));
+  
+        Messages::messager(array('amount' => $_SESSION['allPositions']['amount'],'uploaded' => $_SESSION['allPositions']['amount'],'status' => 'stop','caption' => 'Выгрузка окончена','dataType' => 'done'));
 
-        unset($_SESSION['newCat'], $_SESSION['newProd'], $_SESSION['updProd'], $_SESSION['updCat']);
+        unset($_SESSION['newCat'], $_SESSION['newProd'], $_SESSION['updProd'], $_SESSION['updCat'],$_SESSION['allPositions']);
 
     }
     
@@ -250,7 +309,7 @@ class HomeController extends CmsController
             
             foreach ($k as $key => $value) {
     
-               if($value !== 'state'){
+               if($value !== 'state' && !empty($v[$key])){
 
                    $result[$value] = $v[$key];
 

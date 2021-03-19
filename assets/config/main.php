@@ -2,8 +2,7 @@
  /**
   *  main_general_categoryID => Корневая категория
   *  main_step => Шаг - для обработки порционного кол-ва (снижает нагрузку на сервер)
-  *  main_field_names_product => ТВ поля которые участвуют в выгрузке необходимо указать через запятую в array(price,weight,tvcolor,tvStyle итд) в точности как они и есть
-  *  если это подключаемое поле то его нужно обозначать тем же именем как оно у Вас называется в админке. Важно - поля размещать строго порядку карты
+  *  main_field_names_product => ТВ поля которые участвуют в выгрузке необходимо указать через запятую в array(tv1,tv2,tv3,tv4 итд) где цифра это id поля
   *  csv документа
   *  main_field_names_category - аналогично полю выше, только оно для категорий,
   *  main_file_name => 'test.csv' - файл откуда выгружать
@@ -24,35 +23,35 @@ return array(
    main_file_name => 'test.csv',
    main_delimiter => '|',
    main_unique_field_category => 'pagetitle',
-   main_unique_field_product => 'code',
+   main_unique_field_product => 'tv5',
    main_field_names_product => array(
       'article',
       'pagetitle',
-      'in_stock',
-      'price_in_rub_sales',
-      'box_in_rub',
-      'rrp_to_rub',
-      'code',
-      'full_product_description',
-      'link_to_product_image',
-      'size',
-      'wallpaper_type',
-      'roll_length',
-      'picture_size',
-      'premises',
-      'wallpaper_texture',
-      'base_material',
-      'the_country',
-      'manufacturer',
-      'collection',
-      'material',
-      'pattern_repeat',
-      'roll_width',
-      'drawing',
-      'color',
-      'special properties',
-      'style',
-      'cover material'
+      'tv1',
+      'tv2',
+      'tv3',
+      'tv4',
+      'tv5',
+      'tv6',
+      'tv7',
+      'tv8',
+      'tv9',
+      'tv10',
+      'tv11',
+      'tv12',
+      'tv13',
+      'tv14',
+      'tv15',
+      'tv16',
+      'tv17',
+      'tv18',
+      'tv19',
+      'tv20',
+      'tv21',
+      'tv22',
+      'tv23',
+      'tv24',
+      'tv25'
    ),
    main_field_names_category => array(
       'none',
