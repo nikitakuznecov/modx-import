@@ -56,6 +56,8 @@
 
       $main_unique_field_category = $conf['ImportConfig']['main_unique_field_category'];
 
+      $main_cell_category_in_product = $conf['ImportConfig']['main_cell_category_in_product'];
+
       $category = array();
 
       $product = array();
@@ -78,6 +80,10 @@
          throw new \ErrorException('Ошибка, в конфигурации не указан уникальный код категории');
       }
 
+      if(!$main_cell_category_in_product || empty($main_cell_category_in_product)){
+         throw new \ErrorException('Ошибка, в конфигурации не указано дополнительное значение уникального кода категории в товаре (main_cell_category_in_product)');
+      }
+
       $config = new LexerConfig();
 
       $config->setDelimiter($conf['ImportConfig']['main_delimiter']);
@@ -86,14 +92,14 @@
 
       $interpreter = new Interpreter();
 
-      $interpreter->addObserver(function(array $row) use (&$category,&$product,&$map_product,&$map_category,&$main_unique_field_category,&$main_unique_field_product ) {
+      $interpreter->addObserver(function(array $row) use (&$category,&$product,&$map_product,&$map_category,&$main_unique_field_category,&$main_unique_field_product,&$main_cell_category_in_product ) {
         
-         if($catValue = $this->byMapIntoAnArray($map_category,$row,$main_unique_field_category)){
+         if($catValue = $this->byMapIntoAnArray($map_category,$row,$main_unique_field_category,$main_unique_field_category)){
 
             $category[] = $catValue;
 
          }
-         if($prodValue = $this->byMapIntoAnArray($map_product,$row,$main_unique_field_product)){
+         if($prodValue = $this->byMapIntoAnArray($map_product,$row,$main_unique_field_product,$main_cell_category_in_product)){
 
             $product[] = $prodValue;
 
@@ -103,7 +109,7 @@
 
       $lexer->parse($this->checkPath( $conf['ImportConfig']['main_file_name'] ), $interpreter);
 
-      $this->setCategoriesArray( $this->removeDublicates($category) );
+      $this->setCategoriesArray( $this->removeDublicates($category,$main_unique_field_category) );
 
       $this->setProductsArray( $product );
 
@@ -114,16 +120,16 @@
      
    }
 
-   public function removeDublicates($arr)
+   public function removeDublicates($arr,$unique)
    {
       $has = array();
       $output = array();
 
       foreach ( $arr as $key => $data )
       {
-         if ( !in_array($data['pagetitle'], $has) )
+         if ( !in_array($data[$unique], $has) )
          {
-            $has[] = $data['pagetitle'];
+            $has[] = $data[$unique];
             $output[] = $data;
          }
       }
@@ -131,7 +137,7 @@
       return $output;
    } 
 
-   public function byMapIntoAnArray($map,$array,$uniqueCode)
+   public function byMapIntoAnArray($map,$array,$uniqueCode,$ad_field)
    {
        try{
            
@@ -148,8 +154,8 @@
             }
 
          }
-         if($result[$uniqueCode] && $result['pagetitle']){
-
+         if($result[$uniqueCode] && $result[$ad_field]){
+            
             $result['state'] = $this->isCoincides ( $result[$uniqueCode] );
             
          }else{

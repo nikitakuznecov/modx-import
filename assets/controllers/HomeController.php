@@ -38,11 +38,11 @@ class HomeController extends CmsController
 
       $_SESSION['allPositions']['amount'] = $_SESSION['newProd']['amount']+$_SESSION['updProd']['amount']+$_SESSION['newCat']['amount']+$_SESSION['updCat']['amount'];
 
-      $_SESSION['newProd']['start'] = $_SESSION['updProd']['start']= $_SESSION['newProd']['start'] = $_SESSION['newCat']['start'] = $_SESSION['updCat']['start'] = 0;
-      $_SESSION['newProd']['limit'] = $_SESSION['updProd']['limit'] = $config['ImportConfig']['main_step'];
+      $_SESSION['newProd']['start'] = $_SESSION['updProd']['start']= $_SESSION['newProd']['start'] = $_SESSION['newCat']['start'] = $_SESSION['updCat']['start'] = $_SESSION['newImage']['start'] = 0;
+      $_SESSION['newProd']['limit'] = $_SESSION['updProd']['limit'] = $_SESSION['newImage']['limit'] = $config['ImportConfig']['main_step'];
       $_SESSION['newCat']['limit'] = $_SESSION['updCat']['limit'] = $config['ImportConfig']['main_step'];
 
-      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" => $_SESSION['updProd']['items'])); 
+      Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" => $_SESSION['newProd']['items'])); 
 
     }
     
@@ -154,12 +154,65 @@ class HomeController extends CmsController
 
               }else{
 
-                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'productsUpdate'));
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'downloadImages'));
 
             }
       }else{
 
-          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Добавление категорий','dataType' => 'productsUpdate'),true);
+          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Добавление категорий','dataType' => 'downloadImages'),true);
+
+      }
+    }
+
+    public function downloadImages()
+    {
+      $modx = $this->di->get("modx");
+      $config = $this->di->get("config");
+      $main_cell_product_image = $config['ImportConfig']['main_cell_product_image'];
+      $main_download_path_images = $config['ImportConfig']['main_download_path_images'];
+      
+      if (!empty($_SESSION['newProd']['items']) && !empty($main_download_path_images)) {
+
+          $amount = $_SESSION['newProd']['amount'];
+          $start = $_SESSION['newImage']['start'];
+          $limit = $_SESSION['newImage']['start'] + $_SESSION['newImage']['limit'];
+
+          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}   
+          
+          for ($i=$start; $i <= $limit; $i++) { 
+            
+            //Проверим есть ли значение в массиве с url
+            if($_SESSION['newProd']['items'][$i][$main_cell_product_image]){
+
+                //Сделаем запрос по указанному url и посмотрим есть ли там изображение если есть то продолжаем
+               if($this->checkRemoteFile($_SESSION['newProd']['items'][$i][$main_cell_product_image])){
+                    
+                $file_name = basename($_SESSION['newProd']['items'][$i][$main_cell_product_image]);
+
+                if (!file_exists($_SERVER['DOCUMENT_ROOT'].$main_download_path_images)) {
+                    mkdir($_SERVER['DOCUMENT_ROOT'].$main_download_path_images, 0777, true);
+                }
+                    
+                file_put_contents($_SERVER['DOCUMENT_ROOT'].$main_download_path_images.$file_name, file_get_contents($_SESSION['newProd']['items'][$i][$main_cell_product_image]));
+
+               }    
+            }
+          }
+
+          $_SESSION['newImage']['start'] = $i;
+
+           if($status == 'next'){
+
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Загружаем новые изображения','dataType' => 'downloadImages'));
+
+              }else{
+
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Загружаем новые изображения','dataType' => 'productsUpdate'));
+
+            }
+      }else{
+
+          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Загружаем новые изображения','dataType' => 'productsUpdate'),true);
 
       }
     }
@@ -181,7 +234,7 @@ class HomeController extends CmsController
 
           for ($i=$start; $i < $limit; $i++) { 
               
-            if($_SESSION['updProd']['items'][$i][$main_unique_field_product]){
+            /*if($_SESSION['updProd']['items'][$i][$main_unique_field_product]){
 
               //Пытаемся найти товар, если получается идем дальше
               if($id = $modx->getObject('msProduct',array('link_attributes'=> $_SESSION['updProd']['items'][$i][$main_unique_field_product]))->get('id')){
@@ -206,7 +259,7 @@ class HomeController extends CmsController
                 }
               }
 
-            }
+            }*/
 
           }
           $_SESSION['updProd']['start'] = $i;
@@ -234,6 +287,9 @@ class HomeController extends CmsController
       $idParrent = $config['ImportConfig']['main_general_categoryID'];
       $main_unique_field_product = $config['ImportConfig']['main_unique_field_product'];
       $main_unique_field_category = $config['ImportConfig']['main_unique_field_category'];
+      $main_cell_category_in_product = $config['ImportConfig']['main_cell_category_in_product'];
+      $main_download_path_images = $config['ImportConfig']['main_download_path_images'];
+      $main_cell_product_image = $config['ImportConfig']['main_cell_product_image'];
 
       if (!empty($_SESSION['newProd']['items'])) {
 
@@ -245,10 +301,10 @@ class HomeController extends CmsController
 
           for ($i=$start; $i <= $limit; $i++) { 
             
-            if($_SESSION['newProd']['items'][$i]['tv16']){
+            if($_SESSION['newProd']['items'][$i][$main_cell_category_in_product]){
 
               //Пытаемся найти категорию товара, если получается идем дальше
-              if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['newProd']['items'][$i]['tv16']))->get('id')){
+              if($id = $modx->getObject('modResource',array('link_attributes'=> $_SESSION['newProd']['items'][$i][$main_cell_category_in_product]))->get('id')){
 
                 //Массив параметров для импорта по умолчанию 
                 $arrayDef = array('parent' => $id,'alias'=>$_SESSION['newProd']['items'][$i]['pagetitle'].'-'.$_SESSION['newProd']['items'][$i][$main_unique_field_product],'link_attributes'=>$_SESSION['newProd']['items'][$i][$main_unique_field_product],'template' => $main_prod_template,'isfolder' => 0,'published' => 1,'class_key' => 'msProduct','context_key' => 'web');
@@ -267,9 +323,33 @@ class HomeController extends CmsController
                       $modx->error->reset();
 
                   }
+                }else{
+
+                  $resource = $response->getObject();
+
+                }
+
+                if($_SESSION['newProd']['items'][$i][$main_cell_product_image] && $resource){
+
+                  $gallery = array($_SESSION['newProd']['items'][$i][$main_cell_product_image]);
+
+                  foreach ($gallery as $v) {
+
+                    if (empty($v)) {continue;}
+
+                    $path = $_SERVER['DOCUMENT_ROOT'].$main_download_path_images.basename($v);
+
+                    if (file_exists($path)) {
+  
+                      $resp = $modx->runProcessor('gallery/upload',
+                        array('id' => $resource['id'], 'name' => basename($v), 'file' => $path),
+                        array('processors_path' => $_SERVER['DOCUMENT_ROOT'].'/core/components/minishop2/processors/mgr/')
+                      );
+
+                    }
+                  }
                 }
               }
-
             }
           }
           $_SESSION['newProd']['start'] = $i;
@@ -291,7 +371,12 @@ class HomeController extends CmsController
     }
     public function finished()
     {
-  
+        $config = $this->di->get("config");
+
+        $main_download_path_images = $config['ImportConfig']['main_download_path_images'];  
+
+        $this->rmRec($_SERVER['DOCUMENT_ROOT'].$main_download_path_images);
+        
         Messages::messager(array('amount' => $_SESSION['allPositions']['amount'],'uploaded' => $_SESSION['allPositions']['amount'],'status' => 'stop','caption' => 'Выгрузка окончена','dataType' => 'done'));
 
         unset($_SESSION['newCat'], $_SESSION['newProd'], $_SESSION['updProd'], $_SESSION['updCat'],$_SESSION['allPositions']);
@@ -338,6 +423,35 @@ class HomeController extends CmsController
 
       return $result;
     }
+
+  public function checkRemoteFile($url)
+  {
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_URL,$url);
+      // don't download content
+      curl_setopt($ch, CURLOPT_NOBODY, 1);
+      curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+      if(curl_exec($ch)!==FALSE)
+      {
+          return true;
+      }
+      else
+      {
+          return false;
+      }
+  }
+
+  public function rmRec($path) 
+  {
+    if (is_file($path)) return unlink($path);
+    if (is_dir($path)) {
+      foreach(scandir($path) as $p) if (($p!='.') && ($p!='..'))
+        $this->rmRec($path.DIRECTORY_SEPARATOR.$p);
+        return rmdir($path); 
+      }
+    return false;
+  }
 
 }
 ?>

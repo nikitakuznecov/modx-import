@@ -7,8 +7,11 @@
   *  main_field_names_category - аналогично полю выше, только оно для категорий,
   *  main_file_name => 'test.csv' - файл откуда выгружать
   *  main_delimiter => '|' - разделитель строк
+  *  main_cell_category_in_product - определяет позицию категории в строке параметров товара (для того чтобы отсеить на этапе сбора массива все товары у которых не указана категория)
   *  main_unique_field_category => название уникального поля для категорий (код категории или артикул), должно быть из списка карты 
   *  main_unique_field_product => название уникального поля для продукта (код продутка или артикул), должно быть из списка карты 
+  *  main_download_path_images => путь куда будут загружены (временно) изображения
+  *  main_cell_product_image - элемент массива где хранится изображение (элемент не будет учитываться в финальной выгрузке он необходим для загрузки картинки на сервер и последущей загрузки в галерею)
   *  Карта как должен выглядеть файл
   *  Название категории итд (параметры категории аналогично)| Название файла | итд (параметры файла в таком же порядке)
   *  main_import_relations => 1 - если есть повторения файлов в каких либо категориях он сделает на этот товар связь с этими категориями
@@ -19,11 +22,14 @@
 return array(
 
    main_general_categoryID => '1',
-   main_step => '25',
+   main_step => '100',
    main_file_name => 'test.csv',
    main_delimiter => '|',
    main_unique_field_category => 'pagetitle',
    main_unique_field_product => 'tv5',
+   main_cell_category_in_product => 'tv16',
+   main_cell_product_image => 'tv7',
+   main_download_path_images => '/import/template/img/uploading/',
    main_field_names_product => array(
       'article',
       'pagetitle',
