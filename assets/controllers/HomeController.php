@@ -234,7 +234,7 @@ class HomeController extends CmsController
 
           for ($i=$start; $i < $limit; $i++) { 
               
-            /*if($_SESSION['updProd']['items'][$i][$main_unique_field_product]){
+            if($_SESSION['updProd']['items'][$i][$main_unique_field_product]){
 
               //Пытаемся найти товар, если получается идем дальше
               if($id = $modx->getObject('msProduct',array('link_attributes'=> $_SESSION['updProd']['items'][$i][$main_unique_field_product]))->get('id')){
@@ -259,7 +259,7 @@ class HomeController extends CmsController
                 }
               }
 
-            }*/
+            }
 
           }
           $_SESSION['updProd']['start'] = $i;
@@ -346,7 +346,7 @@ class HomeController extends CmsController
                         array('processors_path' => $_SERVER['DOCUMENT_ROOT'].'/core/components/minishop2/processors/mgr/')
                       );
 
-                    }
+                    } 
                   }
                 }
               }
