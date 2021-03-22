@@ -42,6 +42,12 @@ class HomeController extends CmsController
       $_SESSION['newProd']['limit'] = $_SESSION['updProd']['limit'] = $_SESSION['newImage']['limit'] = $config['ImportConfig']['main_step'];
       $_SESSION['newCat']['limit'] = $_SESSION['updCat']['limit'] = $config['ImportConfig']['main_step'];
 
+      if($config['ImportConfig']['main_import_hide_resources'] !== 0){
+
+          $result = $modx->query("UPDATE `site_content` SET `published` = 0 WHERE `template` = $category_template OR `template` = $product_template NOT `id` <> $generalId "); 
+
+      }
+
       Messages::messager(array("products" => $_SESSION['allProd']['items'],"categories" => $_SESSION['allCat']['items'],"information" => $_SESSION['newProd']['items'])); 
 
     }
@@ -154,68 +160,16 @@ class HomeController extends CmsController
 
               }else{
 
-                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'downloadImages'));
+                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Добавление категорий','dataType' => 'productsUpdate'));
 
             }
       }else{
 
-          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Добавление категорий','dataType' => 'downloadImages'),true);
+          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Добавление категорий','dataType' => 'productsUpdate'),true);
 
       }
     }
 
-    public function downloadImages()
-    {
-      $modx = $this->di->get("modx");
-      $config = $this->di->get("config");
-      $main_cell_product_image = $config['ImportConfig']['main_cell_product_image'];
-      $main_download_path_images = $config['ImportConfig']['main_download_path_images'];
-      
-      if (!empty($_SESSION['newProd']['items']) && !empty($main_download_path_images)) {
-
-          $amount = $_SESSION['newProd']['amount'];
-          $start = $_SESSION['newImage']['start'];
-          $limit = $_SESSION['newImage']['start'] + $_SESSION['newImage']['limit'];
-
-          if ($limit >= $amount) {$limit = $amount;$status = 'stop';} else {$status = 'next';}   
-          
-          for ($i=$start; $i <= $limit; $i++) { 
-            
-            //Проверим есть ли значение в массиве с url
-            if($_SESSION['newProd']['items'][$i][$main_cell_product_image]){
-
-                //Сделаем запрос по указанному url и посмотрим есть ли там изображение если есть то продолжаем
-               if($this->checkRemoteFile($_SESSION['newProd']['items'][$i][$main_cell_product_image])){
-                    
-                $file_name = basename($_SESSION['newProd']['items'][$i][$main_cell_product_image]);
-
-                if (!file_exists($_SERVER['DOCUMENT_ROOT'].$main_download_path_images)) {
-                    mkdir($_SERVER['DOCUMENT_ROOT'].$main_download_path_images, 0777, true);
-                }
-                    
-                file_put_contents($_SERVER['DOCUMENT_ROOT'].$main_download_path_images.$file_name, file_get_contents($_SESSION['newProd']['items'][$i][$main_cell_product_image]));
-
-               }    
-            }
-          }
-
-          $_SESSION['newImage']['start'] = $i;
-
-           if($status == 'next'){
-
-                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Загружаем новые изображения','dataType' => 'downloadImages'));
-
-              }else{
-
-                Messages::messager(array('amount' => $amount,'uploaded' => $i,'status' => $status,'caption' => 'Загружаем новые изображения','dataType' => 'productsUpdate'));
-
-            }
-      }else{
-
-          Messages::messager(array('amount' => 0,'uploaded' => 0,'status' => 'stop','caption' => 'Загружаем новые изображения','dataType' => 'productsUpdate'),true);
-
-      }
-    }
     public function productsUpdate()
     {
       $modx = $this->di->get("modx");
@@ -329,29 +283,30 @@ class HomeController extends CmsController
 
                 }
 
-                if($_SESSION['newProd']['items'][$i][$main_cell_product_image] && $resource){
+                if($_SESSION['newProd']['items'][$i][$main_cell_product_image] && $resource['id']){
 
-                  $gallery = array($_SESSION['newProd']['items'][$i][$main_cell_product_image]);
+                 $path = $_SESSION['newProd']['items'][$i][$main_cell_product_image];
 
-                  foreach ($gallery as $v) {
+                  $resp = $modx->runProcessor('gallery/upload',
+                    array('id' => $resource['id'], 'file' => $path),
+                    array('processors_path' => $_SERVER['DOCUMENT_ROOT'].'/core/components/minishop2/processors/mgr/')
+                  );
 
-                    if (empty($v)) {continue;}
+                   if ($resp->response['success'] == false) {
 
-                    $path = $_SERVER['DOCUMENT_ROOT'].$main_download_path_images.basename($v);
-
-                    if (file_exists($path)) {
-  
-                      $resp = $modx->runProcessor('gallery/upload',
-                        array('id' => $resource['id'], 'name' => basename($v), 'file' => $path),
-                        array('processors_path' => $_SERVER['DOCUMENT_ROOT'].'/core/components/minishop2/processors/mgr/')
-                      );
-
-                    } 
-                  }
+                      foreach ($resp->errors as $key => $value) {
+    
+                          $modx->error->reset();
+    
+                      }
+                    }
                 }
               }
             }
           }
+          
+          $modx->cacheManager->refresh();
+          
           $_SESSION['newProd']['start'] = $i;
 
           if($status == 'next'){
@@ -371,12 +326,7 @@ class HomeController extends CmsController
     }
     public function finished()
     {
-        $config = $this->di->get("config");
 
-        $main_download_path_images = $config['ImportConfig']['main_download_path_images'];  
-
-        $this->rmRec($_SERVER['DOCUMENT_ROOT'].$main_download_path_images);
-        
         Messages::messager(array('amount' => $_SESSION['allPositions']['amount'],'uploaded' => $_SESSION['allPositions']['amount'],'status' => 'stop','caption' => 'Выгрузка окончена','dataType' => 'done'));
 
         unset($_SESSION['newCat'], $_SESSION['newProd'], $_SESSION['updProd'], $_SESSION['updCat'],$_SESSION['allPositions']);
@@ -421,7 +371,7 @@ class HomeController extends CmsController
         }
       }
 
-      return $result;
+      return array_values($result);
     }
 
   public function checkRemoteFile($url)
